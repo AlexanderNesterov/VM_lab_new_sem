@@ -2,7 +2,11 @@ package labTwo;
 
 public class Solution {
     public static void main(String[] args) {
-        double[][] matrix = Matrixes.generate(3);
+//        double[][] matrix = Matrixes.readFile();
+        /**
+         * Генерирует обратную матрицу
+         */
+        double[][] matrix = Matrixes.generate(10);
 
         System.out.println("Исходная: ");
         Matrixes.print(matrix);
@@ -13,10 +17,9 @@ public class Solution {
         double[][] reverse = Matrixes.reverseMatrix(matrix);
         Matrixes.print(reverse);
 
-        /**
-         * Должна получиться единичная матрица
-         */
         System.out.println("Проверка: ");
         Matrixes.print(Matrixes.multiply(matrix, reverse));
+
+        Matrixes.writeToFile(reverse);
     }
 }

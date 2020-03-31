@@ -1,10 +1,51 @@
 package labTwo;
 
+import java.io.*;
+import java.rmi.server.ExportException;
 import java.util.Random;
+import java.util.Scanner;
 
 public class Matrixes {
     private static final int UPPER_RANGE = 20;
     private static final int LOWER_RANGE = -10;
+    private static final String INPUT_FILE_NAME = "src/input.txt";
+    private static final String OUTPUT_FILE_NAME = "src/output.txt";
+
+    public static void writeToFile(double[][] matrix) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(OUTPUT_FILE_NAME)))) {
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < matrix.length; i++) {
+                for (int j = 0; j < matrix[0].length; j++) {
+                    sb.append(matrix[i][j]).append(" ");
+                }
+                sb.append("\n");
+            }
+
+            writer.write(sb.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static double[][] readFile() {
+        double[][] matrix = null;
+
+        try (Scanner sc = new Scanner(new File(INPUT_FILE_NAME))) {
+            int size = sc.nextInt();
+            matrix = new double[size][size];
+
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+                    matrix[i][j] = sc.nextDouble();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return matrix;
+    }
 
     public static double[][] copy(double[][] matrix) {
         double[][] copy = new double[matrix.length][matrix[0].length];
@@ -142,7 +183,7 @@ public class Matrixes {
                 double dev = copy[j + 1][i];
 
                 for (int k = i; k < copy[0].length; k++) {
-                    copy[j+1][k] = copy[j+1][k] - (dev * copy[i][k]);
+                    copy[j + 1][k] = copy[j + 1][k] - (dev * copy[i][k]);
                 }
             }
         }
