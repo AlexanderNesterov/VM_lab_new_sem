@@ -179,30 +179,26 @@ public class Matrixes {
 
     public static double findAlgExt(double[][] matrix, int rowNum, int colNum) {
         int algSize = matrix.length - 1;
-        int colMinus = 0;
-        int rowMinus = 0;
         double[][] algExtMatrix = new double[algSize][algSize];
 
         for (int i = 0; i < matrix.length; i++) {
             if (i == rowNum) {
-                rowMinus = -1;
                 continue;
             }
 
             for (int j = 0; j < matrix[0].length; j++) {
                 if (j == colNum) {
-                    colMinus = -1;
                     continue;
                 }
 
                 int k = i;
                 int l = j;
                 if (i > rowNum) {
-                    k += rowMinus;
+                    k--;
                 }
 
                 if (j > colNum) {
-                    l += colMinus;
+                    l--;
                 }
 
                 algExtMatrix[k][l] = matrix[i][j];

@@ -13,6 +13,10 @@ public class Solution {
         double[][] reverse = Matrixes.reverseMatrix(matrix);
         Matrixes.print(reverse);
 
+        /**
+         * Должна получиться единичная матрица
+         */
+        System.out.println("Проверка: ");
         Matrixes.print(Matrixes.multiply(matrix, reverse));
     }
 }
