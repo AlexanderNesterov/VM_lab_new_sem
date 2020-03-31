@@ -1,4 +1,4 @@
-package Solution;
+package labOne;
 
 import java.io.*;
 import java.util.Scanner;
