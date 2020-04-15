@@ -1,7 +1,6 @@
 package labTwo;
 
 import java.io.*;
-import java.rmi.server.ExportException;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -45,6 +44,42 @@ public class Matrixes {
         }
 
         return matrix;
+    }
+
+    public static double[][] generateIMatrix(int size) {
+        double[][] matrix = new double[size][size];
+
+        for (int i = 0; i < size; i++) {
+            matrix[i][i] = 1;
+        }
+
+        return matrix;
+    }
+
+    public static double findMaxAbsValue(double[][] matrix) {
+        double maxValue = -1;
+
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix.length; j++) {
+                if (Math.abs(matrix[i][j]) > maxValue) {
+                    maxValue = Math.abs(matrix[i][j]);
+                }
+            }
+        }
+
+        return maxValue;
+    }
+
+    public static double[][] subtraction(double[][] matrixOne, double[][] matrixTwo) {
+        double[][] result = new double[matrixOne.length][matrixOne.length];
+
+        for (int i = 0; i < matrixOne.length; i++) {
+            for (int j = 0; j < matrixOne.length; j++) {
+                result[i][j] = matrixOne[i][j] - matrixTwo[i][j];
+            }
+        }
+
+        return result;
     }
 
     public static double[][] copy(double[][] matrix) {
@@ -144,7 +179,7 @@ public class Matrixes {
 
         double reversedDeterminant = 1 / det;
 
-        double[][] result = transpose(matrix);
+        double[][] result = new double[matrix.length][matrix.length];
 
         for (int i = 0; i < result.length; i++) {
             for (int j = 0; j < result[0].length; j++) {
