@@ -13,6 +13,7 @@ public class Solution {
     private static double x0;
     private static double y0;
     private static double y1;
+    private static double k;
 
 
     public static void main(String[] args) {
@@ -22,8 +23,16 @@ public class Solution {
         double yEps = y0 + ((double) 1/ 336) * (14 * k1(x0, y0) + 35 * k4(x0, y0) + 162 * k5(x0, y0) + 125 * k6(x0, y0));
         double newEps = Math.abs(y1 - yEps);
 
-        if (newEps > EPS) {
+/*        if (newEps > EPS) {
             double he = h * Math.pow(EPS / newEps, (double) 1 / 4);
+
+            if (newEps > EPS)
+        }*/
+
+        if (newEps > EPS) {
+            h /= 2;
+        } else if (newEps < EPS / k) {
+            h *= 2;
         }
 
 
@@ -33,7 +42,19 @@ public class Solution {
         y0 = y1;
         x0 = x1;
 
-        if
+        if (x0 == B) {
+            return;
+        }
+
+        if (dir * (B - (x0 + h)) < hMin) {
+            if (dir * (B - x0) >= 2 * hMin) {
+                h = B - dir * hMin - x0;
+            } else if (dir * (B - x0) <= 1.5 * hMin) {
+                h = B - x0;
+            } else {
+                h = B / 2 - x0 / 2;
+            }
+        }
     }
 
     private static double f(double x, double y) {
