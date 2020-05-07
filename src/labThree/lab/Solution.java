@@ -9,29 +9,10 @@ import java.io.IOException;
 
 import static java.lang.Math.abs;
 
-/*
-    Задание:
-        Решение задачи Коши с заданной точностью с автоматическим
-        выбором шага методом удвоения и деления шага пополам.
-
-        Интегрирование обыкновенного дифференциального уравнения
-            y' = f(x,y), x in [А,В]
-        с начальным условием y(c)=yc,
-        где точка cовпадает либо с началом,
-        либо с концом отрезка интегрирования.
-
-        Состав входного файла:
-        1. A B x y
-        2. hmin epsmax
-
-    Вариант: метод третьего порядка, оценка с помощью правила рунге.
- */
-
-class RungeKutta {
-    // примеры функций
+public class Solution {
     private static class Functions {
         static double f1(double X, double Y) {
-            return 1; // X
+            return 28 * X * X * X; // X
         }
 
         static double f2(double X, double Y) {
@@ -48,10 +29,11 @@ class RungeKutta {
     }
 
     private FileWrite fileOut;  // вывод данных в файл
-    private static final double mconst = 0.875; // 1/2^3 - 1
-    private int error;          // индикатор ошибки: 0 - ок, 1 - ошибка ввода
+//    private static final double mconst = 0.875; // 1/2^3 - 1
+    private static final double mconst = 0.9375; // 1/2^3 - 1
+    private int error;
     private boolean direction;  // false - left-to-right, true - right-to-left
-    private double h;           // текущий шаг интегрирования
+    private double h;
     private double
             A, B,
             x, y,   // c ~ x, yc ~ y
@@ -60,51 +42,41 @@ class RungeKutta {
             epsmax; // наибольшая допустимая погрешность
     private int pointsCount, wAccuracy; // кол-во точек, кол-во точек в которых не достигли точности
 
-    public RungeKutta() {
-        this(
-                "/home/alexander/Documents/java projects/VM_lab_new_sem/data.txt",
-                "/home/alexander/Documents/java projects/VM_lab_new_sem/output.txt"
-        );
+    public Solution() {
+        this("/home/alexander/Documents/java projects/VM_lab_new_sem/data.txt",
+                "/home/alexander/Documents/java projects/VM_lab_new_sem/output.txt");
     }
 
-    public RungeKutta(String inputfile, String outfile) {
+    public Solution(String inputfile, String outfile) {
         wAccuracy = error = 0;
         pointsCount = 1;
         dataFromFile(inputfile, outfile);
         hmax = h = abs(B - A) / 10.0;
-        direction = (x == B); // определение направления
+        direction = (x == B);
 
         if ((direction ? B : A) != x || A >= B || epsmax < 0 || hmin <= 0) {
             error = 1;
         }
     }
 
-    // основная функция
     public void start() {
         if (error == 1) {
             System.out.println("Ошибка ввода!");
             return;
         }
 
-        // Если необходимо - можно задать начальный шаг вручную
-        //h = 0.125;
-
-        // Подготовка файла
         fileOut.cleanFile();
         fileOut.write("X\t\t\t\t\t\tY\t\t\t\t\t\tEPS\t\t\t\t\t\th");
-        fileOut.write(15, x, y, eps); // пишем первое граничное значение
+        fileOut.write(15, x, y, eps);
 
-        // Основной цикл
-        boolean lastdiv = false; // было ли последним действием деление шага
+        boolean lastdiv = false;
         while (true) {
-
-            // автовыбор шага
             int multiplyLimit = 0;
-            runge(h * direct());    // делаем оценку погрешности с заданным шагом
-            if (eps <= epsmax / 8) {      // если точность слишком высокая
+            runge(h * direct());
+            if (eps <= epsmax / 8) {
                 while (eps <= epsmax / 8) {
-                    if (h * 2 <= hmax * 400) { // наибольший шаг взят условно, можно отключить
-                        if (lastdiv) { // не допускаем умножения после деления
+                    if (h * 2 <= hmax * 200) {
+                        if (lastdiv) {
                             lastdiv = false;
                             break;
                         }
@@ -169,43 +141,17 @@ class RungeKutta {
         pointsCount++;
 
         fileOut.write("\n");
-        fileOut.write("Summary points count:   \t" + pointsCount);
-        fileOut.write("Accuracy is not obtained in: " + wAccuracy);
+        fileOut.write("Общее количество точек:   \t" + pointsCount);
+        fileOut.write("Точность не достигнута в : " + wAccuracy);
     }
 
     private double f(double X, double Y) {
-        return Functions.f2(X, Y);    // ф-ия изменяется при необходимости
+        return Functions.f1(X, Y);    // ф-ия изменяется при необходимости
     }
 
     // в зависимости от направления выдает -1(если справа налево) или 1(слева направо)
     private double direct() {
         return (direction) ? -1.0 : 1.0;
-    }
-
-    // Нахождение yi+1. Вычисление по формуле (110), метод 3-го порядка
-    private double intMethod115(double X, double Y, double H) {
-        double K1 = H * f(X, Y);
-        double K2 = H * f(X + (1.0 / 3.0) * H, Y + (1.0 / 3.0) * K1);
-        double K3 = H * f(X + (2.0 / 3.0) * H, Y + (2.0 / 3.0) * K2);
-        return Y + 0.25 * (K1 + 3.0 * K3);
-    }
-
-    private double alik115(double X, double Y, double H) {
-        double K1 = H * f(X, Y);
-        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
-        double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K2);
-        double K4 = H * f(X + H, Y + K3);
-        return Y + (1.0 / 6.0) * (K1 + 2 * K2 + 2.0 * K3 + K4);
-    }
-
-    private double sasha127(double X, double Y, double H) {
-        double K1 = H * f(X, Y);
-        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
-        double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 4.0) * K1 + (1.0 / 4.0) * K2);
-        double K4 = H * f(X + H, Y - K2 + 2 * K3);
-        double K5 = H * f(X + (2.0 / 3.0) * H, Y + (7.0 / 27.0) * K1 + (10.0 / 27.0) * K2 + (1.0 / 27.0) * K4);
-        double K6 = H * f(X + (1.0 / 5.0) * H * H, Y - (1.0 / 625.0) * (28 * K1 - 125 * K2 + 546 * K3 + 54 * K4 + 378 * K5));
-        return Y + (1.0 / 336.0) * (14 * K1 + 35.0 * K4 + 162 * K5 + 125 * K6);
     }
 
     // Оценка погрешности по правилу Рунге
@@ -216,11 +162,12 @@ class RungeKutta {
     // Вычисление Yi+1 + оценка погрешности
     private double runge(double h) {
         // 1) вычисление Yi+1
-        double nextY = alik115(x, y, h); // вычисление yi+1
+        double nextY = sasha129(x, y, h); // вычисление yi+1
 
         // 2) Оценка погрешности по правилу Рунге
         // вычисление первого h/2 шага внутри второго шага
-        double nextY2 = alik115(x + h / 2.0, alik115(x, y, h / 2.0), h / 2.0);
+        double nextY2 = sasha129(x + h / 2.0, sasha127(x, y, h / 2.0), h / 2.0);
+//        double nextY2 = sasha127(x, y, h);
         eps = rungeRule(nextY, nextY2);
 
         if (eps < 1e-15) {// ~ машинный эпсилон
@@ -244,16 +191,44 @@ class RungeKutta {
         step();
     }
 
-    // вывод данных в консоль
-    private <T> void write(T... items) {
-        for (T i : items)
-            System.out.print(i + "\t");
+    // Нахождение yi+1. Вычисление по формуле (110), метод 3-го порядка
+    private double intMethod115(double X, double Y, double H) {
+        double K1 = H * f(X, Y);
+        double K2 = H * f(X + (1.0 / 3.0) * H, Y + (1.0 / 3.0) * K1);
+        double K3 = H * f(X + (2.0 / 3.0) * H, Y + (2.0 / 3.0) * K2);
+        return Y + 0.25 * (K1 + 3.0 * K3);
     }
 
-    private <T> void writeln(T... items) {
-        for (T i : items)
-            System.out.print(i + "\t");
-        System.out.println();
+    private double alik115(double X, double Y, double H) {
+        double K1 = H * f(X, Y);
+        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
+        double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K2);
+        double K4 = H * f(X + H, Y + K3);
+        return Y + (1.0 / 6.0) * (K1 + 2 * K2 + 2.0 * K3 + K4);
+    }
+
+    private double alik22(double X, double Y, double H) {
+        double K1 = H * f(X, Y);
+        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
+        return Y + K2;
+    }
+
+    private double sasha127(double X, double Y, double H) {
+        double K1 = H * f(X, Y);
+        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
+        double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 4.0) * K1 + (1.0 / 4.0) * K2);
+        double K4 = H * f(X + H, Y - K2 + 2 * K3);
+        double K5 = H * f(X + (2.0 / 3.0) * H, Y + (7.0 / 27.0) * K1 + (10.0 / 27.0) * K2 + (1.0 / 27.0) * K4);
+        double K6 = H * f(X + (1.0 / 5.0) * H, Y - (1.0 / 625.0) * (28 * K1 - 125 * K2 + 546 * K3 + 54 * K4 + 378 * K5));
+        return Y + (1.0 / 336.0) * (14 * K1 + 35.0 * K4 + 162 * K5 + 125 * K6);
+    }
+
+    private double sasha129(double X, double Y, double H) {
+        double K1 = H * f(X, Y);
+        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
+        double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 4.0) * K1 + (1.0 / 4.0) * K2);
+        double K4 = H * f(X + H, Y - K2 + 2 * K3);
+        return Y + (1.0 / 6.0) * (K1 + 4.0 * K3 + K4);
     }
 
     private void dataFromFile(String inputfile, String outfile) {
