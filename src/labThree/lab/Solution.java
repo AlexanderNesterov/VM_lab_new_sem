@@ -10,37 +10,36 @@ import java.io.IOException;
 import static java.lang.Math.abs;
 
 public class Solution {
-    private static class Functions {
-        static double f1(double X, double Y) {
-            return 28 * X * X * X; // X
+    private static class Function {
+        static double f1(double X, double Y) {  // 2 * X
+            return 2;
         }
 
-        static double f2(double X, double Y) {
-            return 2 * X; // X^2
+        static double f2(double X, double Y) { // X * X
+            return 2 * X;
         }
 
-        static double f3(double X, double Y) {
-            return 4 * 3 * X * X; // 4*X^3
+        static double f3(double X, double Y) {  // 4 * X * X * X
+            return 4 * 3 * X * X;
         }
 
-        static double f4(double X, double Y) {
-            return 9 * 4 * X * X * X; // + Y - X*X*X*X
+        static double f4(double X, double Y) { // 7 * X * X * X * X
+            return 7 * 4 * X * X * X;
         }
     }
 
-    private FileWrite fileOut;  // вывод данных в файл
-//    private static final double mconst = 0.875; // 1/2^3 - 1
-    private static final double mconst = 0.9375; // 1/2^3 - 1
+    private FileWrite fileOut;
+    private static final double mconst = 0.9375;
     private int error;
-    private boolean direction;  // false - left-to-right, true - right-to-left
+    private boolean direction;
     private double h;
     private double
             A, B,
-            x, y,   // c ~ x, yc ~ y
-            hmin, hmax,   // минимальный шаг
-            eps,    // оценка погрешности на шаге
-            epsmax; // наибольшая допустимая погрешность
-    private int pointsCount, wAccuracy; // кол-во точек, кол-во точек в которых не достигли точности
+            x, y,
+            hmin,
+            eps,
+            epsmax;
+    private int pointsCount, wAccuracy;
 
     public Solution() {
         this("/home/alexander/Documents/java projects/VM_lab_new_sem/data.txt",
@@ -50,8 +49,8 @@ public class Solution {
     public Solution(String inputfile, String outfile) {
         wAccuracy = error = 0;
         pointsCount = 1;
-        dataFromFile(inputfile, outfile);
-        hmax = h = abs(B - A) / 10.0;
+        readValuesFromFile(inputfile, outfile);
+        h = abs(B - A) / 10.0;
         direction = (x == B);
 
         if ((direction ? B : A) != x || A >= B || epsmax < 0 || hmin <= 0) {
@@ -59,61 +58,53 @@ public class Solution {
         }
     }
 
-    public void start() {
+    public void doCalculation() {
         if (error == 1) {
             System.out.println("Ошибка ввода!");
             return;
         }
 
-        fileOut.cleanFile();
-        fileOut.write("X\t\t\t\t\t\tY\t\t\t\t\t\tEPS\t\t\t\t\t\th");
-        fileOut.write(15, x, y, eps);
+        writeToFile();
 
         boolean lastdiv = false;
         while (true) {
             int multiplyLimit = 0;
-            runge(h * direct());
-            if (eps <= epsmax / 8) {
-                while (eps <= epsmax / 8) {
-                    if (h * 2 <= hmax * 200) {
-                        if (lastdiv) {
-                            lastdiv = false;
-                            break;
-                        }
-                        if (multiplyLimit <= 5) {
-                            multiplyLimit++;
-                        } else {  // если достигли предела для умножения
-                            multiplyLimit = 0;
-                            break;
-                        }
-                        h *= 2;
-                        runge(h * direct());
-                        // если при умножении вышли за макс погрешность, то возвращаемся назад
-                        if (eps > epsmax) {
-                            h /= 2;
-                            break;
-                        }
+            getNextY(h * getDirection());
+            if (eps <= epsmax) {
+                while (eps <= epsmax) {
+                    if (lastdiv) {
+                        lastdiv = false;
+                        break;
+                    }
+                    if (multiplyLimit <= 2) {
+                        multiplyLimit++;
                     } else {
+                        multiplyLimit = 0;
+                        break;
+                    }
+                    h *= 2;
+                    getNextY(h * getDirection());
+                    if (eps > epsmax) {
+                        h /= 2;
                         break;
                     }
                 }
             } else {
-                if (eps > epsmax) { // если точность слишком низкая
+                if (eps > epsmax) {
                     while (eps > epsmax) {
                         if (h / 2 >= hmin) {
                             lastdiv = true;
                             h /= 2;
-                            runge(h * direct());
-                        } else { // если не удалось достичь точности
-                            h = hmin; // устанавливаем мин шаг
+                            getNextY(h * getDirection());
+                        } else {
+                            h = hmin;
                             break;
                         }
                     }
                 }
             }
 
-            // Определение конца отрезка.
-            if ((direction ? x - h - A : B - x - h) < hmin || x + h == x) { // Если после текущего шага B-x будет < hmin
+            if ((direction ? x - h - A : B - x - h) < hmin || x + h == x) {
                 break;
             }
 
@@ -121,69 +112,53 @@ public class Solution {
             pointsCount++;
         }
 
-        // обрабатываем состояние, когда находимся у конца отрезка
-        // выбор направления - direction ? [справа налево] : [слева направо]
-        if ((direction ? x - A : B - x) >= 2 * hmin) { // если больше чем за 2 мин шага от края
+        if ((direction ? x - A : B - x) >= 2 * hmin) {
             h = direction ? x - hmin - A : B - hmin - x;
             step();
             lastStep();
             pointsCount++;
+        } else if ((direction ? x - A : B - x) <= 1.5 * hmin) {
+            lastStep();
         } else {
-            if ((direction ? x - A : B - x) <= 1.5 * hmin) { // если меньше чем за 1.5 мин шага
-                lastStep();
-            } else { // если 1.5*hmin < остаток(B-x) < 2*hmin
-                h = direction ? (x - A) / 2.0 : (B - x) / 2.0;
-                step();
-                lastStep();
-                pointsCount++;
-            }
+            h = direction ? (x - A) / 2.0 : (B - x) / 2.0;
+            step();
+            lastStep();
+            pointsCount++;
         }
         pointsCount++;
-
-        fileOut.write("\n");
-        fileOut.write("Общее количество точек:   \t" + pointsCount);
-        fileOut.write("Точность не достигнута в : " + wAccuracy);
+        writeResultsToFile();
     }
 
     private double f(double X, double Y) {
-        return Functions.f1(X, Y);    // ф-ия изменяется при необходимости
+        return Function.f1(X, Y);
     }
 
-    // в зависимости от направления выдает -1(если справа налево) или 1(слева направо)
-    private double direct() {
+    private double getDirection() {
         return (direction) ? -1.0 : 1.0;
     }
 
-    // Оценка погрешности по правилу Рунге
-    private double rungeRule(double yh1, double yh2) {
+    private double checkRule(double yh1, double yh2) {
         return abs((yh1 - yh2) / mconst);
     }
 
-    // Вычисление Yi+1 + оценка погрешности
-    private double runge(double h) {
-        // 1) вычисление Yi+1
-        double nextY = sasha129(x, y, h); // вычисление yi+1
+    private double getNextY(double h) {
+        double nextY = sasha129(x, y, h);
 
-        // 2) Оценка погрешности по правилу Рунге
-        // вычисление первого h/2 шага внутри второго шага
-        double nextY2 = sasha129(x + h / 2.0, sasha127(x, y, h / 2.0), h / 2.0);
-//        double nextY2 = sasha127(x, y, h);
-        eps = rungeRule(nextY, nextY2);
-
-        if (eps < 1e-15) {// ~ машинный эпсилон
-            eps = 0;
-        }
+//        double nextY2 = sasha129(x + h / 2.0, sasha127(x, y, h / 2.0), h / 2.0);
+        double nextY2 = sasha129(x, y, h);
+        eps = checkRule(nextY, nextY2);
+        setZeroEps();
 
         return nextY;
     }
 
     private void step() {
-        y = runge(h * direct());        // вычисление Yi+1, оценка погрешности по правилу Рунге
+        y = getNextY(h * getDirection());
         if (eps > epsmax) {
             wAccuracy++;
         }
-        x += h * direct();  // делаем шаг с учётом направления
-        fileOut.write(15, x, y, eps, h * direct()); // выводим данные
+        x += h * getDirection();
+        fileOut.write(15, x, y, eps, h * getDirection());
     }
 
     private void lastStep() {
@@ -191,12 +166,10 @@ public class Solution {
         step();
     }
 
-    // Нахождение yi+1. Вычисление по формуле (110), метод 3-го порядка
-    private double intMethod115(double X, double Y, double H) {
-        double K1 = H * f(X, Y);
-        double K2 = H * f(X + (1.0 / 3.0) * H, Y + (1.0 / 3.0) * K1);
-        double K3 = H * f(X + (2.0 / 3.0) * H, Y + (2.0 / 3.0) * K2);
-        return Y + 0.25 * (K1 + 3.0 * K3);
+    private void setZeroEps() {
+        if (eps < 1e-15) {
+            eps = 0;
+        }
     }
 
     private double alik115(double X, double Y, double H) {
@@ -204,7 +177,15 @@ public class Solution {
         double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
         double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K2);
         double K4 = H * f(X + H, Y + K3);
-        return Y + (1.0 / 6.0) * (K1 + 2 * K2 + 2.0 * K3 + K4);
+        return Y + (1.0 / 6.0) * (K1 + 2.0 * K2 + 2.0 * K3 + K4);
+    }
+
+    private double sasha129(double X, double Y, double H) {
+        double K1 = H * f(X, Y);
+        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
+        double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 4.0) * K1 + (1.0 / 4.0) * K2);
+        double K4 = H * f(X + H, Y - K2 + 2 * K3);
+        return Y + (1.0 / 6.0) * (K1 + 4.0 * K3 + K4);
     }
 
     private double alik22(double X, double Y, double H) {
@@ -223,17 +204,15 @@ public class Solution {
         return Y + (1.0 / 336.0) * (14 * K1 + 35.0 * K4 + 162 * K5 + 125 * K6);
     }
 
-    private double sasha129(double X, double Y, double H) {
+    private double intMethod115(double X, double Y, double H) {
         double K1 = H * f(X, Y);
-        double K2 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 2.0) * K1);
-        double K3 = H * f(X + (1.0 / 2.0) * H, Y + (1.0 / 4.0) * K1 + (1.0 / 4.0) * K2);
-        double K4 = H * f(X + H, Y - K2 + 2 * K3);
-        return Y + (1.0 / 6.0) * (K1 + 4.0 * K3 + K4);
+        double K2 = H * f(X + (1.0 / 3.0) * H, Y + (1.0 / 3.0) * K1);
+        double K3 = H * f(X + (2.0 / 3.0) * H, Y + (2.0 / 3.0) * K2);
+        return Y + 0.25 * (K1 + 3.0 * K3);
     }
 
-    private void dataFromFile(String inputfile, String outfile) {
+    private void readValuesFromFile(String inputfile, String outfile) {
         fileOut = new FileWrite(outfile);
-        // считывание из файла. try-with-resources конструкция, закрывает поток сам
         try (BufferedReader fin = new BufferedReader(new FileReader(new File(inputfile)))) {
             A = Double.parseDouble(fin.readLine());
             B = Double.parseDouble(fin.readLine());
@@ -242,10 +221,21 @@ public class Solution {
             hmin = Double.parseDouble(fin.readLine());
             epsmax = Double.parseDouble(fin.readLine());
         } catch (IOException ex) {
-            //System.out.printf("File error!");
             System.out.println(ex.getMessage());
             ex.printStackTrace();
         }
 
+    }
+
+    private void writeResultsToFile() {
+        fileOut.write("\n");
+        fileOut.write("Общее количество точек:   \t" + pointsCount);
+        fileOut.write("Точность не достигнута в : " + wAccuracy);
+    }
+
+    private void writeToFile() {
+        fileOut.cleanFile();
+        fileOut.write("X\t\t\t\t\t\tY\t\t\t\t\t\tEPS\t\t\t\t\t\th");
+        fileOut.write(15, x, y, eps);
     }
 }
