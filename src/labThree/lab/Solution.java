@@ -12,7 +12,7 @@ import static java.lang.Math.abs;
 public class Solution {
     private static class Function {
         static double f1(double X, double Y) {  // 2 * X
-            return 2;
+            return 3 * X * X * X;
         }
 
         static double f2(double X, double Y) { // X * X
@@ -147,7 +147,7 @@ public class Solution {
 //        double nextY2 = sasha129(x + h / 2.0, sasha127(x, y, h / 2.0), h / 2.0);
         double nextY2 = sasha129(x, y, h);
         eps = checkRule(nextY, nextY2);
-        setZeroEps();
+//        setZeroEps();
 
         return nextY;
     }
